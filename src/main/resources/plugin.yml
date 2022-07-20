@@ -1,0 +1,14 @@
+name: BetterChat
+version: '${project.version}'
+main: hikko.betterchat.BetterChat
+api-version: 1.19
+prefix: BetterChat
+authors: [ Hikko ]
+depend:
+  - Essentials
+  - AuthMe
+  - ProtocolLib
+
+commands:
+  dmsg:
+    description: " "
