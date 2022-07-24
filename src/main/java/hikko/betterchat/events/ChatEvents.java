@@ -10,14 +10,15 @@ import hikko.betterchat.playerhistory.ChatController;
 import hikko.betterchat.playerhistory.protocol.ChatPacketHandler;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.ess3.api.events.PrivateMessagePreSendEvent;
-import net.ess3.api.events.VanishStatusChangeEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -73,7 +74,12 @@ public class ChatEvents implements Listener {
         for (Player playerr : Bukkit.getOnlinePlayers()) {
             if (playerr.canSee(player) || forced) {
                 if (!loginAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, 1);
-                playerr.sendMessage(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + player.getName());
+                Component joinComponent = Component.text("")
+                                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Поприветствовать ").color(NamedTextColor.WHITE).append(Component.text(player.getName()).color(NamedTextColor.YELLOW))))
+                                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "!" + player.getName() + " qq"))
+                                .append(Component.text("[+] ", NamedTextColor.GREEN))
+                                .append(Component.text(player.getName(), NamedTextColor.YELLOW));
+                playerr.sendMessage(joinComponent);
             }
         }
         if (!loginAlertIsCooldown) {
@@ -105,7 +111,7 @@ public class ChatEvents implements Listener {
     }
 
     @EventHandler
-    public void PrivateMessageSent(PrivateMessagePreSendEvent e) { // Essentials event
+    public void PrivateMessageSend(PrivateMessagePreSendEvent e) { // Essentials event
         e.setCancelled(true);
         if (ChatController.chatIsCooldown(BetterChat.getInstance().getServer().getPlayer(e.getSender().getName()))) return;
         String message = e.getMessage();
@@ -151,16 +157,8 @@ public class ChatEvents implements Listener {
         if (!e.isCancelled()) {
             Player player = e.getPlayer();
             Component message = Component.empty();
-            String world;
-            if (player.getLocation().getWorld().getName().equals("world")) {
-                world = "Верхний мир";
-            } else if (player.getLocation().getWorld().getName().equals("world_the_end")) {
-                world = "Энд";
-            } else if (player.getLocation().getWorld().getName().equals("world_nether")) {
-                world = "Ад";
-            } else {
-                world = "Неизвестный мир";
-            }
+            String world = getWorldName(player.getLocation().getWorld().getName());
+
             message = message
                     .append(Component.text("Координаты вашей смерти:").color(TextColor.color(0xFF9D1F)))
                     .append(Component.newline())
@@ -187,89 +185,23 @@ public class ChatEvents implements Listener {
 
         Player sender = e.getPlayer();
 
-        Component nickname = Component.empty();
-        Component descNickname = Component.empty();
-        Component messageColon = Component.text(": ")
-                .color(TextColor.color(0x5D5D5D));
         String content = PlainTextComponentSerializer.plainText().serialize(e.message());
-
-        nickname = nickname
-                .append(Component.text(sender.getName()))
-                        .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/w " + e.getPlayer().getName() + " "))
-                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, descNickname.append(
-                                Component.text("Нажмите ",NamedTextColor.GREEN)
-                                        .append(Component.text("ЛКМ", NamedTextColor.WHITE))
-                                        .append(Component.text(", чтобы отправить личное сообщение игроку ", NamedTextColor.GREEN))
-                                        .append(Component.text(e.getPlayer().getName(), NamedTextColor.WHITE))
-                        )));
-
-
-
-        Component global = Component.text("[G] ")
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Глобальный чат").color(TextColor.color(0x55FF55))))
-                .color(TextColor.color(0x55FF55));
-
-        Component local = Component.text("[L] ")
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Локальный чат").color(TextColor.color(0xAAAAAA))))
-                .color(TextColor.color(0xAAAAAA));
 
         Location location = sender.getLocation();
 
-        Component logMessage;
-        if (content.startsWith("!")) { // Global chat
-            logMessage = Component.text("[G] ", NamedTextColor.GREEN)
-                    .append(Component.text(e.getPlayer().getName()))
-                    .append(Component.text(": " + content.replaceFirst("!", "")));
-
+        // Global chat
+        if (content.startsWith("!")) {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                String playerContent = content;
-
-                if (playerContent.contains(player.getName() + " ")) {
-                    player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, (float) 0.5, (float) 2);
-                    String tagName = LegacyComponentSerializer.legacyAmpersand().serialize(Component.text().append(Component.text(player.getName(), NamedTextColor.YELLOW)).append(Component.text(" ", NamedTextColor.WHITE)).build());
-                    playerContent = playerContent.replaceFirst(player.getName() + " ", tagName);
-                }
-                Component sendMessage = Component.empty();
-                Component playerContentComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(playerContent.replaceFirst("!", ""));
-                sendMessage = sendMessage
-                        .append(global)
-                        .append(nickname)
-                        .append(messageColon)
-                        .append(playerContentComponent);
-                ChatController.getPlayer(player).appendMessage(messageCounter, global, nickname, playerContentComponent);
-                player.sendMessage(sendMessage);
-
+                sendFinalChatComponent(content, e.getPlayer(), player, true);
             }
-        } else { // Local chat
-            logMessage = Component.text("[L] ", NamedTextColor.GREEN)
-                    .append(Component.text(e.getPlayer().getName()))
-                    .append(Component.text(": " + content));
-
+        // Local chat
+        } else {
             boolean heard = false;
-
             for (Player player : Bukkit.getOnlinePlayers()) {
-                String playerContent = content;
                 if (!location.getWorld().equals(player.getWorld())) continue;
                 if (location.distance(player.getLocation()) < 100) {
-
-                    if (playerContent.contains(player.getName() + " ")) {
-                        player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, (float) 0.5, (float) 2);
-                        String tagName = LegacyComponentSerializer.legacyAmpersand().serialize(Component.text().append(Component.text(player.getName(), NamedTextColor.YELLOW)).append(Component.text(" ", NamedTextColor.WHITE)).build());
-                        playerContent = playerContent.replaceFirst(player.getName() + " ", tagName);
-                    }
-                    Component sendMessage = Component.empty();
-                    Component playerContentComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(playerContent.replaceFirst("!", ""));
-                    sendMessage = sendMessage
-                            .append(local)
-                            .append(nickname)
-                            .append(messageColon)
-                            .append(LegacyComponentSerializer.legacyAmpersand().deserialize(playerContent));
-
+                    sendFinalChatComponent(content, e.getPlayer(), player, false);
                     if (!player.equals(sender) && sender.canSee(player)) heard = true;
-
-                    ChatController.getPlayer(player).appendMessage(messageCounter, local, nickname, playerContentComponent);
-                    player.sendMessage(sendMessage);
-
                 }
             }
             if (!heard) {
@@ -290,7 +222,69 @@ public class ChatEvents implements Listener {
             }
         }
         messageCounter++;
-        chatLogger.log(Level.INFO, PlainTextComponentSerializer.plainText().serialize(logMessage));
+    }
+
+    private void sendFinalChatComponent(String messageContent, Player sender, Player player, boolean isGlobal) {
+        Component global = Component.text("[G] ")
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Глобальный чат").color(TextColor.color(0x55FF55))))
+                .color(TextColor.color(0x55FF55));
+
+        Component local = Component.text("[L] ")
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Локальный чат").color(TextColor.color(0xAAAAAA))))
+                .color(TextColor.color(0xAAAAAA));
+
+        Component nickname = Component.empty()
+                .append(Component.text(sender.getName()))
+                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/w " + sender.getName() + " "))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
+                        Component.text("Нажмите ", NamedTextColor.GREEN)
+                                .append(Component.text("ЛКМ", NamedTextColor.WHITE))
+                                .append(Component.text(", чтобы отправить личное сообщение игроку ", NamedTextColor.GREEN))
+                                .append(Component.text(sender.getName(), NamedTextColor.WHITE))
+                )));
+
+        Component messageColon = Component.text(": ")
+                .color(TextColor.color(0x5D5D5D));
+
+        if (isGlobal) messageContent = messageContent.replaceFirst("!", "");
+        if (messageContent.contains(player.getName())) {
+            player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, (float) 0.5, (float) 2);
+            String tagName = LegacyComponentSerializer.legacyAmpersand().serialize(Component.text().append(Component.text(player.getName(), NamedTextColor.YELLOW)).append(Component.text("§f")).build());
+            messageContent = messageContent.replaceFirst(player.getName(), tagName);
+        }
+        Component sendMessage = Component.empty();
+        TextReplacementConfig parser = TextReplacementConfig.builder()
+                .match("%pos%")
+                .replacement(Component.text(
+                        "[X: " + sender.getLocation().getBlockX() +
+                                " Y: " + sender.getLocation().getBlockY() +
+                                " Z: " + sender.getLocation().getBlockZ() + "]", NamedTextColor.GREEN)
+                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Мир: ").append(Component.text(getWorldName(sender.getLocation().getWorld().getName()), NamedTextColor.GREEN))))
+                ).build();
+        sendMessage = sendMessage
+                .append(isGlobal ? global : local)
+                .append(nickname)
+                .append(messageColon)
+                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent).replaceText(parser));
+
+        Component chatHistoryContent = LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent);
+        ChatController.getPlayer(player).appendMessage(messageCounter, local, nickname, chatHistoryContent);
+//        chatLogger.log(Level.INFO, GsonComponentSerializer.gson().serialize(sendMessage)); // Debug
+        chatLogger.log(Level.INFO, PlainTextComponentSerializer.plainText().serialize(sendMessage));
+        player.sendMessage(sendMessage);
+    }
+
+    private String getWorldName(String name) {
+        switch (name) {
+            case "world":
+                return "Верхний мир";
+            case "world_the_end":
+                return "Энд";
+            case "world_nether":
+                return "Нижний мир";
+            default:
+                return "Неизвестный мир";
+        }
     }
 
 }
