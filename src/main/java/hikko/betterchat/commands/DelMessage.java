@@ -17,7 +17,7 @@ public class DelMessage extends AbstractCommand {
     public void execute(CommandSender sender, String label, String[] args) {
         if (sender.hasPermission("betterchat.detelemessage")) {
             if (args.length == 0) {
-                sender.sendMessage("/dsmg [id]");
+                sender.sendMessage("/dmsg [id]");
             }
             if (args.length > 0) {
                 BetterChat.getInstance().getLogger().log(Level.INFO, Arrays.toString(args));
@@ -25,7 +25,7 @@ public class DelMessage extends AbstractCommand {
                     int id = Integer.parseInt(args[0]);
                     ChatController.deleteMessage(id);
                 } catch (NumberFormatException e) {
-                    sender.sendMessage("/dsmg [id]");
+                    sender.sendMessage("/dmsg [id]");
                 }
             }
         }

@@ -1,6 +1,8 @@
 package hikko.betterchat.events;
 
 import com.earth2me.essentials.User;
+import de.myzelyam.api.vanish.PlayerHideEvent;
+import de.myzelyam.api.vanish.PlayerShowEvent;
 import fr.xephi.authme.api.v3.AuthMeApi;
 import fr.xephi.authme.events.LoginEvent;
 import hikko.betterchat.BetterChat;
@@ -8,6 +10,7 @@ import hikko.betterchat.playerhistory.ChatController;
 import hikko.betterchat.playerhistory.protocol.ChatPacketHandler;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.ess3.api.events.PrivateMessagePreSendEvent;
+import net.ess3.api.events.VanishStatusChangeEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -46,30 +49,46 @@ public class ChatEvents implements Listener {
     private boolean logoutAlertIsCooldown = false;
 
     @EventHandler
-    public void LoginEvent(LoginEvent e) { // AuthMe login event
+    public void LoginEvent(PlayerHideEvent e) {
+        logOutPlayerNotify(e.getPlayer(), true);
+    }
+    @EventHandler
+    public void LoginEvent(PlayerShowEvent e) {
+        logInPlayerNotify(e.getPlayer(), true);
+    }
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.canSee(e.getPlayer())) {
-                if (!loginAlertIsCooldown) player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, 1);
-                player.sendMessage(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + e.getPlayer().getName());
+
+    @EventHandler
+    public void LoginEvent(LoginEvent e) { // AuthMe login event
+        logInPlayerNotify(e.getPlayer(), false);
+    }
+
+    @EventHandler
+    public void QuitEvent(PlayerQuitEvent e) {
+        ChatController.removePlayer(e.getPlayer());
+        logOutPlayerNotify(e.getPlayer(), false);
+    }
+
+    private void logInPlayerNotify(Player player, boolean forced) {
+        for (Player playerr : Bukkit.getOnlinePlayers()) {
+            if (playerr.canSee(player) || forced) {
+                if (!loginAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, 1);
+                playerr.sendMessage(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + player.getName());
             }
         }
         if (!loginAlertIsCooldown) {
             loginAlertIsCooldown = true;
             scheduler.runTaskLater(BetterChat.getInstance(), () -> loginAlertIsCooldown = false, 1200);
         }
-
     }
 
-    @EventHandler
-    public void PlayerQuitEvent(PlayerQuitEvent e) {
-        Player player = e.getPlayer();
-        ChatController.removePlayer(player);
+
+    private void logOutPlayerNotify(Player player, boolean forced) {
         if (AuthMeApi.getInstance().isAuthenticated(player)) {
             for (Player playerr : Bukkit.getOnlinePlayers()) {
-                if (playerr.canSee(e.getPlayer())) {
+                if (playerr.canSee(player) || forced) {
                     if (!logoutAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, (float) 0.2);
-                    playerr.sendMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + e.getPlayer().getName());
+                    playerr.sendMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName());
                 }
             }
             if (!logoutAlertIsCooldown) {
