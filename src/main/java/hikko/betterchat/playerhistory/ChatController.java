@@ -15,7 +15,9 @@ public final class ChatController {
         ChatPlayers.forEach(chatPlayer -> {
             if (Objects.equals(chatPlayer.getNickname(), player.getName())) {
                 if (chatPlayer.isCooldown()) {
-                    player.sendMessage(Component.text("Немного подождите, прежде чем снова отправить сообщение", NamedTextColor.YELLOW));
+                    Component cooldownMessage = Component.text("Немного подождите, прежде чем снова отправить сообщение", NamedTextColor.YELLOW);
+                    player.sendMessage(cooldownMessage);
+                    ChatController.getPlayer(player).appendMessage(-1, null, null, cooldownMessage);
                     result[0] = true;
                 } else {
                     chatPlayer.setCooldown();

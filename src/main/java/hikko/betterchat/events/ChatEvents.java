@@ -18,7 +18,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -31,7 +30,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.logging.Level;
@@ -39,7 +41,7 @@ import java.util.logging.Logger;
 
 public class ChatEvents implements Listener {
     public ChatEvents() {
-        BetterChat.getInstance().getLogger().log(Level.INFO, "Loading chat events...");
+        BetterChat.logger.info( "Loading chat events...");
         new ChatPacketHandler();
     }
     private final Logger chatLogger = Logger.getLogger("Chat");
@@ -50,11 +52,11 @@ public class ChatEvents implements Listener {
     private boolean logoutAlertIsCooldown = false;
 
     @EventHandler
-    public void LoginEvent(PlayerHideEvent e) {
+    public void PlayerHideEvent(PlayerHideEvent e) {
         logOutPlayerNotify(e.getPlayer(), true);
     }
     @EventHandler
-    public void LoginEvent(PlayerShowEvent e) {
+    public void PlayerShowEvent(PlayerShowEvent e) {
         logInPlayerNotify(e.getPlayer(), true);
     }
 
@@ -66,9 +68,16 @@ public class ChatEvents implements Listener {
 
     @EventHandler
     public void QuitEvent(PlayerQuitEvent e) {
-        ChatController.removePlayer(e.getPlayer());
         logOutPlayerNotify(e.getPlayer(), false);
+        ChatController.removePlayer(e.getPlayer());
     }
+
+    @EventHandler
+    public void PlayerJoinEvent(PlayerJoinEvent e) {
+        Player player = e.getPlayer();
+        ChatController.addPlayer(player);
+    }
+
 
     private void logInPlayerNotify(Player player, boolean forced) {
         for (Player playerr : Bukkit.getOnlinePlayers()) {
@@ -80,6 +89,7 @@ public class ChatEvents implements Listener {
                                 .append(Component.text("[+] ", NamedTextColor.GREEN))
                                 .append(Component.text(player.getName(), NamedTextColor.YELLOW));
                 playerr.sendMessage(joinComponent);
+                ChatController.getPlayer(playerr).appendMessage(-1, null, null, joinComponent);
             }
         }
         if (!loginAlertIsCooldown) {
@@ -94,7 +104,9 @@ public class ChatEvents implements Listener {
             for (Player playerr : Bukkit.getOnlinePlayers()) {
                 if (playerr.canSee(player) || forced) {
                     if (!logoutAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, (float) 0.2);
-                    playerr.sendMessage(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName());
+                    Component logoutComponent = Component.text(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName());
+                    playerr.sendMessage(logoutComponent);
+                    ChatController.getPlayer(playerr).appendMessage(-1, null, null, logoutComponent);
                 }
             }
             if (!logoutAlertIsCooldown) {
@@ -105,43 +117,70 @@ public class ChatEvents implements Listener {
     }
 
     @EventHandler
-    public void PlayerJoinEvent(PlayerJoinEvent e) {
-        Player player = e.getPlayer();
-        ChatController.addPlayer(player);
-    }
-
-    @EventHandler
     public void PrivateMessageSend(PrivateMessagePreSendEvent e) { // Essentials event
         e.setCancelled(true);
         if (ChatController.chatIsCooldown(BetterChat.getInstance().getServer().getPlayer(e.getSender().getName()))) return;
-        String message = e.getMessage();
 
         Player recipient = BetterChat.getInstance().getServer().getPlayer(e.getRecipient().getName());
         Player sender = BetterChat.getInstance().getServer().getPlayer(e.getSender().getName());
+
         if (recipient != null && sender != null) {
+            Component message = Component.text(e.getMessage(), NamedTextColor.WHITE);
+            message = itemParser(message, sender);
+            message = positionParser(message, sender);
+
+            Component delMessage = Component.empty()
+                    .append(Component.text("[X] ", NamedTextColor.RED)
+                            .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/dmsg " + messageCounter))
+                            .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
+                                            Component.text("Удалить сообшение", NamedTextColor.RED)
+                                    ))
+                            ));
+
+            boolean havePermDelMessage = sender.hasPermission("betterchat.detelemessage");
+            Component messageSenderContent = Component.empty()
+                    .append(havePermDelMessage ? delMessage : Component.empty())
+                    .append(message);
+
             sender.playSound(sender.getLocation(), Sound.UI_CARTOGRAPHY_TABLE_TAKE_RESULT, (float) 0.3, (float) 1.5);
-            Component sernderMessage = Component.empty();
-            sernderMessage = sernderMessage
+
+            Component senderTag = Component.empty()
                     .append(Component.text("Сообщение для ").color(TextColor.color(0xFF9D1F)))
                     .append(Component.text(recipient.getName()).color(TextColor.color(0xFFDB45)))
-                    .append(Component.text(": ").color(TextColor.color(0xFF9D1F)))
-                    .append(Component.text(message).color(TextColor.color(0xFFFFFF)));
+                    .append(Component.text(": ").color(TextColor.color(0xFF9D1F)));
+            Component senderMessage = Component.empty()
+                    .append(senderTag)
+                    .append(messageSenderContent);
 
-            sender.sendMessage(sernderMessage);
-//            messageQueue.getPlayer(sender).addMessage(sernderMessage);
+            sender.sendMessage(senderMessage);
+            ChatController.getPlayer(sender).appendMessage(messageCounter, senderTag, null, messageSenderContent);
+
+
+            havePermDelMessage = recipient.hasPermission("betterchat.detelemessage");
+            Component messageRecipientContent = Component.empty()
+                    .append(havePermDelMessage ? delMessage : Component.empty())
+                    .append(message);
+
 
             recipient.playSound(recipient.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, (float) 0.5, (float) 2);
-            Component recipientMessage = Component.empty();
-            recipientMessage = recipientMessage
+
+
+            Component recipientTag = Component.empty()
                     .append(Component.text("Сообщение от ").color(TextColor.color(0xFF9D1F)))
                     .append(Component.text(sender.getName())
                             .color(TextColor.color(0xFFDB45))
                             .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Ответить игроку ").color(TextColor.color(0xFF9D1F)).append(Component.text(sender.getName()).color(TextColor.color(0xFFDB45)))))
                             .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/w " + sender.getName() + " ")))
-                    .append(Component.text(": ").color(TextColor.color(0xFF9D1F)))
-                    .append(Component.text(message).color(TextColor.color(0xFFFFFF)));
+                    .append(Component.text(": ").color(TextColor.color(0xFF9D1F)));
+
+            Component recipientMessage = Component.empty()
+                    .append(recipientTag)
+                    .append(messageRecipientContent);
 
             recipient.sendMessage(recipientMessage);
+            ChatController.getPlayer(recipient).appendMessage(messageCounter, recipientTag, null, messageRecipientContent);
+
+            messageCounter++;
 
             Logger.getLogger("PM").log(Level.INFO, "От " + sender.getName() + " для " + recipient.getName() + ": " + e.getMessage());
 
@@ -174,6 +213,8 @@ public class ChatEvents implements Listener {
                     .append(Component.text("Мир: ").color(TextColor.color(0xFFFF55)))
                     .append(Component.text(world).color(TextColor.color(0xFFFFFF)));
             player.sendMessage(message);
+            ChatController.getPlayer(player).appendMessage(-1, null, null, message);
+
         }
     }
 
@@ -192,7 +233,7 @@ public class ChatEvents implements Listener {
         // Global chat
         if (content.startsWith("!")) {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                sendFinalChatComponent(content, e.getPlayer(), player, true);
+                sendFinalChatComponent(content, e.getPlayer(), player, true, messageCounter);
             }
         // Local chat
         } else {
@@ -200,7 +241,7 @@ public class ChatEvents implements Listener {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (!location.getWorld().equals(player.getWorld())) continue;
                 if (location.distance(player.getLocation()) < 100) {
-                    sendFinalChatComponent(content, e.getPlayer(), player, false);
+                    sendFinalChatComponent(content, e.getPlayer(), player, false, messageCounter);
                     if (!player.equals(sender) && sender.canSee(player)) heard = true;
                 }
             }
@@ -217,14 +258,20 @@ public class ChatEvents implements Listener {
                                         )
                                 )
                         ).build();
-                ChatController.getPlayer(sender).appendMessage(messageCounter, null, null, notHeard);
                 sender.sendMessage(notHeard);
+                ChatController.getPlayer(sender).appendMessage(-1, null, null, notHeard);
             }
         }
         messageCounter++;
+        Component logContent = Component.empty()
+                .append(Component.text((content.startsWith("!") ? "[G]" : "[L]") + " "))
+                .append(Component.text(sender.getName()))
+                .append(Component.text(": "))
+                .append(Component.text(content.startsWith("!") ? content.replaceFirst("!", "") : content));
+        chatLogger.info(PlainTextComponentSerializer.plainText().serialize(logContent));
     }
 
-    private void sendFinalChatComponent(String messageContent, Player sender, Player player, boolean isGlobal) {
+    private void sendFinalChatComponent(String messageContent, Player sender, Player player, boolean isGlobal, int messageId) {
         Component global = Component.text("[G] ")
                 .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Глобальный чат").color(TextColor.color(0x55FF55))))
                 .color(TextColor.color(0x55FF55));
@@ -232,6 +279,14 @@ public class ChatEvents implements Listener {
         Component local = Component.text("[L] ")
                 .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Локальный чат").color(TextColor.color(0xAAAAAA))))
                 .color(TextColor.color(0xAAAAAA));
+
+        Component delMessage = Component.empty()
+                .append(Component.text("[X] ", NamedTextColor.RED)
+                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/dmsg " + messageId))
+                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
+                        Component.text("Удалить сообшение", NamedTextColor.RED)
+                        ))
+                ));
 
         Component nickname = Component.empty()
                 .append(Component.text(sender.getName()))
@@ -252,26 +307,26 @@ public class ChatEvents implements Listener {
             String tagName = LegacyComponentSerializer.legacyAmpersand().serialize(Component.text().append(Component.text(player.getName(), NamedTextColor.YELLOW)).append(Component.text("§f")).build());
             messageContent = messageContent.replaceFirst(player.getName(), tagName);
         }
-        Component sendMessage = Component.empty();
-        TextReplacementConfig parser = TextReplacementConfig.builder()
-                .match("%pos%")
-                .replacement(Component.text(
-                        "[X: " + sender.getLocation().getBlockX() +
-                                " Y: " + sender.getLocation().getBlockY() +
-                                " Z: " + sender.getLocation().getBlockZ() + "]", NamedTextColor.GREEN)
-                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Мир: ").append(Component.text(getWorldName(sender.getLocation().getWorld().getName()), NamedTextColor.GREEN))))
-                ).build();
-        sendMessage = sendMessage
-                .append(isGlobal ? global : local)
+
+        Component finalMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent);
+
+        finalMessage = positionParser(finalMessage, sender);
+        finalMessage = itemParser(finalMessage, sender);
+
+        boolean havePermDelMessage = player.hasPermission("betterchat.detelemessage");
+
+        Component tags = Component.empty()
+                .append(havePermDelMessage ? delMessage : Component.empty())
+                .append(isGlobal ? global : local);
+        Component sendMessage = Component.empty()
+                .append(tags)
                 .append(nickname)
                 .append(messageColon)
-                .append(LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent).replaceText(parser));
+                .append(finalMessage);
 
         Component chatHistoryContent = LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent);
-        ChatController.getPlayer(player).appendMessage(messageCounter, local, nickname, chatHistoryContent);
-//        chatLogger.log(Level.INFO, GsonComponentSerializer.gson().serialize(sendMessage)); // Debug
-        chatLogger.log(Level.INFO, PlainTextComponentSerializer.plainText().serialize(sendMessage));
         player.sendMessage(sendMessage);
+        ChatController.getPlayer(player).appendMessage(messageCounter, tags, nickname, chatHistoryContent);
     }
 
     private String getWorldName(String name) {
@@ -285,6 +340,33 @@ public class ChatEvents implements Listener {
             default:
                 return "Неизвестный мир";
         }
+    }
+
+    private Component positionParser(Component message, Player sender) {
+        TextReplacementConfig parser = TextReplacementConfig.builder()
+                .once()
+                .match("%pos%|@pos")
+                .replacement(Component.text(
+                                "[X: " + sender.getLocation().getBlockX() +
+                                        " Y: " + sender.getLocation().getBlockY() +
+                                        " Z: " + sender.getLocation().getBlockZ() + "]", NamedTextColor.GREEN)
+                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Мир: ").append(Component.text(getWorldName(sender.getLocation().getWorld().getName()), NamedTextColor.GREEN))))
+                ).build();
+        return message.replaceText(parser);
+    }
+    private Component itemParser(Component message, Player sender) {
+        ItemStack item = sender.getInventory().getItemInMainHand();
+
+        TextReplacementConfig parser = TextReplacementConfig.builder()
+                .once()
+                .match("%hand%|%item%|@item")
+                .replacement(Component.empty().color(item.displayName().color())
+                        .append(Component.text('['))
+                        .append(Component.translatable(item.translationKey()))
+                        .append(Component.text(']'))
+                        .hoverEvent(item)
+                ).build();
+        return message.replaceText(parser);
     }
 
 }

@@ -1,6 +1,7 @@
 name: BetterChat
 version: '${project.version}'
 main: hikko.betterchat.BetterChat
+load: POSTWORLD
 api-version: 1.19
 prefix: BetterChat
 authors: [ Hikko ]
@@ -8,7 +9,16 @@ depend:
   - Essentials
   - AuthMe
   - ProtocolLib
+  - SuperVanish
 
 commands:
   dmsg:
     description: " "
+  allowportal:
+    description: " "
+
+permissions:
+  betterchat:
+    detelemessage:
+      default: op
+      description: Allow delete messages

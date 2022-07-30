@@ -6,8 +6,8 @@ import org.checkerframework.checker.units.qual.C;
 
 public class ChatMessage {
     public int id;
-    private Component tag;
-    private Component sender;
+    private final Component tag;
+    private final Component sender;
     private Component content;
 
     ChatMessage(int id, Component tag, Component sender, Component content) {
@@ -34,16 +34,9 @@ public class ChatMessage {
     }
 
     public Component getFullComponent() {
-        if (sender != null) {
-            return Component.text()
-                    .append(tag)
-                    .append(sender)
-                    .append(Component.text(": ").color(TextColor.color(0x5D5D5D)))
-                    .append(content)
-                    .build();
-        } else {
-            return content;
-        }
-
+        return Component.empty()
+                .append(tag == null ? Component.empty() : tag)
+                .append(sender == null ? Component.empty() : sender.append(Component.text(": ").color(TextColor.color(0x5D5D5D))))
+                .append(content);
     }
 }

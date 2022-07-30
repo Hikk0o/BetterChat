@@ -3,13 +3,11 @@ package hikko.betterchat.playerhistory;
 import hikko.betterchat.BetterChat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.ComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
-import java.util.logging.Level;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
@@ -19,7 +17,7 @@ public class ChatPlayer {
     private boolean cooldown = false;
     private final ArrayList<ChatMessage> messages = new ArrayList<>();
     private final Logger loggerChatPlayer = Logger.getLogger("Debug ChatPlayer");
-
+    private boolean chatLock = false;
 
     public ChatPlayer(Player player) {
         this.player = player;
@@ -46,15 +44,30 @@ public class ChatPlayer {
 //        messages.forEach(chatMessage -> loggerChatPlayer.log(Level.INFO, chatMessage.id + " (" + messages.size() + "):: " + PlainTextComponentSerializer.plainText().serialize(chatMessage.getContent())));
     }
     public void deleteMessage(int id) {
+        if (!containMessage(id)) return;
+        chatLock = true;
         IntStream.range(0, 100).forEach(n -> player.sendMessage(""));
-        messages.forEach(chatMessage -> {
+        for (ChatMessage chatMessage : messages) {
             if (chatMessage.id == id) {
                 chatMessage.setContent(Component.text()
                         .append(Component.text("* Сообщение удалено администратором *", NamedTextColor.DARK_GRAY))
                         .build());
             }
             player.sendMessage(chatMessage.getFullComponent());
-        });
+        }
+        chatLock = false;
+    }
+    private boolean containMessage(int id) {
+        for (ChatMessage chatMessage : messages) {
+            if (chatMessage.id == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isChatLock() {
+        return chatLock;
     }
 
     public Player get() {
