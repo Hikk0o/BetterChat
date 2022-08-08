@@ -1,6 +1,7 @@
 package hikko.betterchat;
 
 import hikko.betterchat.commands.DelMessage;
+import hikko.betterchat.commands.ReportMessage;
 import hikko.betterchat.events.ChatEvents;
 import net.ess3.api.IEssentials;
 import org.bukkit.Bukkit;
@@ -25,6 +26,7 @@ public final class BetterChat extends JavaPlugin {
 
         // Commands
         new DelMessage();
+        new ReportMessage();
 //        new PortalCommand();
 
         // Events

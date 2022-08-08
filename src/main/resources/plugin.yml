@@ -14,9 +14,14 @@ depend:
 commands:
   dmsg:
     description: ""
+  rmsg:
+    description: ""
 
 permissions:
   betterchat:
     detelemessage:
       default: op
       description: Allow delete messages
+    viewmessagereports:
+      default: op
+      description: Allow view reports

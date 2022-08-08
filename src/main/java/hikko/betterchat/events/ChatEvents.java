@@ -8,6 +8,7 @@ import fr.xephi.authme.events.LoginEvent;
 import hikko.betterchat.BetterChat;
 import hikko.betterchat.playerhistory.ChatController;
 import hikko.betterchat.playerhistory.protocol.ChatPacketHandler;
+import hikko.betterchat.utils.ChatUtils;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.ess3.api.events.PrivateMessagePreSendEvent;
 import net.kyori.adventure.text.Component;
@@ -15,9 +16,7 @@ import net.kyori.adventure.text.TextReplacementConfig;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -44,7 +43,7 @@ public class ChatEvents implements Listener {
     }
     private final Logger chatLogger = Logger.getLogger("Chat");
     private final BukkitScheduler scheduler = BetterChat.getInstance().getServer().getScheduler();
-    public int messageCounter = 0;
+    public int messageCounter = 2;
 
     private boolean loginAlertIsCooldown = false;
     private boolean logoutAlertIsCooldown = false;
@@ -82,10 +81,8 @@ public class ChatEvents implements Listener {
             if (playerr.canSee(player) || forced) {
                 if (!loginAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, 1);
                 Component joinComponent = Component.text("")
-//                                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Поприветствовать ").color(NamedTextColor.WHITE).append(Component.text(player.getName()).color(NamedTextColor.YELLOW))))
-//                                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "!" + player.getName() + " qq"))
-                                .append(Component.text("[+] ", NamedTextColor.GREEN))
-                                .append(Component.text(player.getName(), NamedTextColor.YELLOW));
+                        .append(Component.text(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + player.getName()))
+                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Игрок подключился к серверу", NamedTextColor.GREEN)));
                 playerr.sendMessage(joinComponent);
                 ChatController.getPlayer(playerr).appendMessage(-1, null, null, joinComponent);
             }
@@ -102,7 +99,8 @@ public class ChatEvents implements Listener {
             for (Player playerr : Bukkit.getOnlinePlayers()) {
                 if (playerr.canSee(player) || forced) {
                     if (!logoutAlertIsCooldown) playerr.playSound(playerr.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, (float) 0.3, (float) 0.2);
-                    Component logoutComponent = Component.text(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName());
+                    Component logoutComponent = Component.text(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName())
+                            .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Игрок отключился от сервера", NamedTextColor.RED)));
                     playerr.sendMessage(logoutComponent);
                     ChatController.getPlayer(playerr).appendMessage(-1, null, null, logoutComponent);
                 }
@@ -127,13 +125,8 @@ public class ChatEvents implements Listener {
             message = itemParser(message, sender);
             message = positionParser(message, sender);
 
-            Component delMessage = Component.empty()
-                    .append(Component.text("[X] ", NamedTextColor.RED)
-                            .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/dmsg " + messageCounter))
-                            .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
-                                            Component.text("Удалить сообшение", NamedTextColor.RED)
-                                    ))
-                            ));
+            Component delMessage = ChatUtils.getDelMessageComponent(messageCounter);
+            Component reportMessage = ChatUtils.getReportMessageComponent(messageCounter);
 
             boolean havePermDelMessage = sender.hasPermission("betterchat.detelemessage");
 
@@ -157,7 +150,7 @@ public class ChatEvents implements Listener {
             recipient.playSound(recipient.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, (float) 0.5, (float) 2);
 
             Component recipientTag = Component.empty()
-                    .append(havePermDelMessage ? delMessage : Component.empty())
+                    .append(havePermDelMessage ? delMessage : reportMessage)
                     .append(Component.text("Сообщение от ").color(TextColor.color(0xFF9D1F)))
                     .append(Component.text(sender.getName())
                             .color(TextColor.color(0xFFDB45))
@@ -238,17 +231,7 @@ public class ChatEvents implements Listener {
                 }
             }
             if (!heard) {
-                Component notHeard = Component.text()
-                        .append(Component.text("Вас никто не услышал. ", Style.style(NamedTextColor.namedColor(0xFFFF55), TextDecoration.ITALIC)))
-                        .append(Component.text("[Как написать в глобальный чат?]", Style.style(NamedTextColor.namedColor(0x55FF55)))
-//                                .clickEvent(ClickEvent.runCommand("!" + content))
-                                .hoverEvent(HoverEvent.showText(Component.text()
-                                                .append(Component.text("Поставьте "))
-                                                .append(Component.text("!", NamedTextColor.GREEN))
-                                                .append(Component.text(" в начале сообщения")).build()
-                                        )
-                                ))
-                        .build();
+                Component notHeard = ChatUtils.notHeardComponent;
                 sender.sendMessage(notHeard);
                 ChatController.getPlayer(sender).appendMessage(-1, null, null, notHeard);
             }
@@ -263,34 +246,9 @@ public class ChatEvents implements Listener {
     }
 
     private void sendFinalChatComponent(String messageContent, Player sender, Player player, boolean isGlobal, int messageId) {
-        Component global = Component.text("[G] ")
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Глобальный чат").color(TextColor.color(0x55FF55))))
-                .color(TextColor.color(0x55FF55));
-
-        Component local = Component.text("[L] ")
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Локальный чат").color(TextColor.color(0xAAAAAA))))
-                .color(TextColor.color(0xAAAAAA));
-
-        Component delMessage = Component.empty()
-                .append(Component.text("[X] ", NamedTextColor.RED)
-                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.RUN_COMMAND, "/dmsg " + messageId))
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
-                        Component.text("Удалить сообшение", NamedTextColor.RED)
-                        ))
-                ));
-
-        Component nickname = Component.empty()
-                .append(Component.text(sender.getName()))
-                .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/w " + sender.getName() + " "))
-                .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append(
-                        Component.text("Нажмите ", NamedTextColor.GREEN)
-                                .append(Component.text("ЛКМ", NamedTextColor.WHITE))
-                                .append(Component.text(", чтобы отправить личное сообщение игроку ", NamedTextColor.GREEN))
-                                .append(Component.text(sender.getName(), NamedTextColor.WHITE))
-                )));
-
-        Component messageColon = Component.text(": ")
-                .color(TextColor.color(0x5D5D5D));
+        Component delMessage = ChatUtils.getDelMessageComponent(messageId);
+        Component reportMessage = ChatUtils.getReportMessageComponent(messageId);
+        Component nickname = ChatUtils.getNicknameComponent(sender);
 
         if (isGlobal) messageContent = messageContent.replaceFirst("!", "");
         if (messageContent.contains(player.getName())) {
@@ -307,12 +265,12 @@ public class ChatEvents implements Listener {
         boolean havePermDelMessage = player.hasPermission("betterchat.detelemessage");
 
         Component tags = Component.empty()
-                .append(havePermDelMessage ? delMessage : Component.empty())
-                .append(isGlobal ? global : local);
+                .append(sender.equals(player) ? havePermDelMessage ? delMessage : Component.empty() : havePermDelMessage ? delMessage : reportMessage)
+                .append(isGlobal ? ChatUtils.globalChatComponent : ChatUtils.localChatComponent);
         Component sendMessage = Component.empty()
                 .append(tags)
                 .append(nickname)
-                .append(messageColon)
+                .append(ChatUtils.messageColonComponent)
                 .append(finalMessage);
 
         Component chatHistoryContent = LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent);

@@ -19,6 +19,7 @@ abstract class AbstractCommand implements CommandExecutor, TabCompleter {
 
     public abstract void execute(CommandSender sender, String label, String[] args);
 
+    @SuppressWarnings("SameReturnValue")
     public List<String> complete(CommandSender sender, String[] args) {
         return null;
     }

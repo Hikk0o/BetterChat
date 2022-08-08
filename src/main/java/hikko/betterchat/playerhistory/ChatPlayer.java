@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
@@ -64,6 +63,15 @@ public class ChatPlayer {
             }
         }
         return false;
+    }
+
+    public ChatMessage getMessage(int id) {
+        for (ChatMessage chatMessage : messages) {
+            if (chatMessage.id == id) {
+                return chatMessage;
+            }
+        }
+        return null;
     }
 
     public boolean isChatLock() {

@@ -2,10 +2,9 @@ package hikko.betterchat.playerhistory;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import org.checkerframework.checker.units.qual.C;
 
 public class ChatMessage {
-    public int id;
+    public final int id;
     private final Component tag;
     private final Component sender;
     private Component content;
