@@ -49,7 +49,7 @@ public class ChatPlayer {
         for (ChatMessage chatMessage : messages) {
             if (chatMessage.id == id) {
                 chatMessage.setContent(Component.text()
-                        .append(Component.text("* Сообщение удалено администратором *", NamedTextColor.DARK_GRAY))
+                        .append(Component.text("* удалено администратором *", NamedTextColor.DARK_GRAY))
                         .build());
             }
             player.sendMessage(chatMessage.getFullComponent());
