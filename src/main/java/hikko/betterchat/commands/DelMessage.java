@@ -1,11 +1,7 @@
 package hikko.betterchat.commands;
 
-import hikko.betterchat.BetterChat;
 import hikko.betterchat.playerhistory.ChatController;
 import org.bukkit.command.CommandSender;
-
-import java.util.Arrays;
-import java.util.logging.Level;
 
 public class DelMessage extends AbstractCommand {
 

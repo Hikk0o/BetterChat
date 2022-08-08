@@ -45,11 +45,14 @@ public class ChatPacketHandler {
 					if (ChatController.getPlayer(player) == null) return;
 					if (ChatController.getPlayer(player).isChatLock()) return;
 					StructureModifier<WrappedChatComponent> chatComponents = event.getPacket().getChatComponents();
+//					BetterChat.logger.severe(chatComponents.getTarget().toString()); // Debug
 					String jsonMessage = chatComponents.getTarget().toString()
 							.replace("ClientboundSystemChatPacket[adventure$content=TextComponentImpl", "")
 							.replace("ClientboundSystemChatPacket[adventure$content=null, content=", "")
-							.replace(", content=null, typeId=1]", "")
-							.replace(", typeId=1]", "");
+							.replace(", content=null, overlay=false]", "")
+							.replace(", overlay=false]", "");
+//					BetterChat.logger.warning(jsonMessage); // Debug
+
 					try {
 						Component component = GsonComponentSerializer.gson().deserialize(jsonMessage);
 						ChatController.getPlayer(player).appendMessage(-1, null, null, component);

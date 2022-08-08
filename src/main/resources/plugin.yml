@@ -1,5 +1,5 @@
 name: BetterChat
-version: '${project.version}'
+version: 1.0
 main: hikko.betterchat.BetterChat
 load: POSTWORLD
 api-version: 1.19
@@ -13,9 +13,7 @@ depend:
 
 commands:
   dmsg:
-    description: " "
-  allowportal:
-    description: " "
+    description: ""
 
 permissions:
   betterchat:
