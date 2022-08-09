@@ -44,7 +44,7 @@ public class ChatPacketHandler {
 
 					try {
 						Component component = GsonComponentSerializer.gson().deserialize(jsonMessage);
-						ChatController.getPlayer(player).appendMessage(-1, null, null, component);
+						ChatController.getPlayer(player).appendMessage(-1, null, null, component, null);
 					} catch (Exception e) {
 						// pass
 					}

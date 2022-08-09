@@ -7,6 +7,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -68,6 +69,10 @@ public final class ChatUtils {
                                 .append(Component.text(", чтобы отправить личное сообщение игроку ", NamedTextColor.GREEN))
                                 .append(Component.text(sender.getName(), NamedTextColor.WHITE))
                 )));
+    }
+
+    public static String getStringFromComponent(Component component) {
+        return PlainTextComponentSerializer.plainText().serialize(component);
     }
 
 }

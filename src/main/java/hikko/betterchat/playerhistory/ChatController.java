@@ -17,7 +17,7 @@ public final class ChatController {
                 if (chatPlayer.isCooldown()) {
                     Component cooldownMessage = Component.text("Немного подождите, прежде чем снова отправить сообщение", NamedTextColor.YELLOW);
                     player.sendMessage(cooldownMessage);
-                    ChatController.getPlayer(player).appendMessage(-1, null, null, cooldownMessage);
+                    ChatController.getPlayer(player).appendMessage(-1, null, null, cooldownMessage, null);
                     result[0] = true;
                 } else {
                     chatPlayer.setCooldown();
@@ -45,5 +45,12 @@ public final class ChatController {
 
     public static void deleteMessage(int id) {
         ChatPlayers.forEach(chatPlayer -> chatPlayer.deleteMessage(id));
+    }
+    public static ChatMessage getMessage(int id) {
+        for (ChatPlayer chatPlayer : ChatPlayers) {
+            ChatMessage chatMessage = chatPlayer.getMessage(id);
+            if (chatMessage != null) return chatMessage;
+        }
+        return null;
     }
 }

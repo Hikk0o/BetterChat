@@ -84,7 +84,7 @@ public class ChatEvents implements Listener {
                         .append(Component.text(ChatColor.GREEN + "[+] " + ChatColor.YELLOW + player.getName()))
                         .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Игрок подключился к серверу", NamedTextColor.GREEN)));
                 playerr.sendMessage(joinComponent);
-                ChatController.getPlayer(playerr).appendMessage(-1, null, null, joinComponent);
+                ChatController.getPlayer(playerr).appendMessage(-1, null, null, joinComponent, null);
             }
         }
         if (!loginAlertIsCooldown) {
@@ -102,7 +102,7 @@ public class ChatEvents implements Listener {
                     Component logoutComponent = Component.text(ChatColor.RED + "[-] " + ChatColor.YELLOW + player.getName())
                             .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text("Игрок отключился от сервера", NamedTextColor.RED)));
                     playerr.sendMessage(logoutComponent);
-                    ChatController.getPlayer(playerr).appendMessage(-1, null, null, logoutComponent);
+                    ChatController.getPlayer(playerr).appendMessage(-1, null, null, logoutComponent, null);
                 }
             }
             if (!logoutAlertIsCooldown) {
@@ -142,7 +142,7 @@ public class ChatEvents implements Listener {
                     .append(message);
 
             sender.sendMessage(senderMessage);
-            ChatController.getPlayer(sender).appendMessage(messageCounter, senderTag, null, message);
+            ChatController.getPlayer(sender).appendMessage(messageCounter, senderTag, null, message, sender);
 
 
             havePermDelMessage = recipient.hasPermission("betterchat.detelemessage");
@@ -163,7 +163,7 @@ public class ChatEvents implements Listener {
                     .append(message);
 
             recipient.sendMessage(recipientMessage);
-            ChatController.getPlayer(recipient).appendMessage(messageCounter, recipientTag, null, message);
+            ChatController.getPlayer(recipient).appendMessage(messageCounter, recipientTag, null, message, sender);
 
             messageCounter++;
 
@@ -198,7 +198,7 @@ public class ChatEvents implements Listener {
                     .append(Component.text("Мир: ").color(TextColor.color(0xFFFF55)))
                     .append(Component.text(world).color(TextColor.color(0xFFFFFF)));
             player.sendMessage(message);
-            ChatController.getPlayer(player).appendMessage(-1, null, null, message);
+            ChatController.getPlayer(player).appendMessage(-1, null, null, message, null);
 
         }
     }
@@ -233,7 +233,7 @@ public class ChatEvents implements Listener {
             if (!heard) {
                 Component notHeard = ChatUtils.notHeardComponent;
                 sender.sendMessage(notHeard);
-                ChatController.getPlayer(sender).appendMessage(-1, null, null, notHeard);
+                ChatController.getPlayer(sender).appendMessage(-1, null, null, notHeard, null);
             }
         }
         messageCounter++;
@@ -275,7 +275,7 @@ public class ChatEvents implements Listener {
 
         Component chatHistoryContent = LegacyComponentSerializer.legacyAmpersand().deserialize(messageContent);
         player.sendMessage(sendMessage);
-        ChatController.getPlayer(player).appendMessage(messageCounter, tags, nickname, chatHistoryContent);
+        ChatController.getPlayer(player).appendMessage(messageCounter, tags, nickname, chatHistoryContent, sender);
     }
 
     private String getWorldName(String name) {

@@ -3,6 +3,7 @@ package hikko.betterchat;
 import hikko.betterchat.commands.DelMessage;
 import hikko.betterchat.commands.ReportMessage;
 import hikko.betterchat.events.ChatEvents;
+import hikko.betterchat.utils.WebhookClient;
 import net.ess3.api.IEssentials;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
@@ -16,6 +17,7 @@ public final class BetterChat extends JavaPlugin {
     private static BetterChat instance;
     public static Logger logger;
     private PluginManager pluginManager;
+    private WebhookClient webhookClient;
 
     @Override
     public void onEnable() {
@@ -24,14 +26,15 @@ public final class BetterChat extends JavaPlugin {
         logger = this.getLogger();
         pluginManager = Bukkit.getPluginManager();
 
+        // Utils
+        webhookClient = new WebhookClient();
+
         // Commands
         new DelMessage();
         new ReportMessage();
-//        new PortalCommand();
 
         // Events
         pluginManager.registerEvents(new ChatEvents(), this);
-//        pluginManager.registerEvents(new PortalEvents(), this);
 
     }
 
@@ -48,4 +51,7 @@ public final class BetterChat extends JavaPlugin {
         return (IEssentials) pluginManager.getPlugin("Essentials");
     }
 
+    public WebhookClient getWebhookClient() {
+        return webhookClient;
+    }
 }

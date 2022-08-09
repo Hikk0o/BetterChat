@@ -35,11 +35,11 @@ public class ChatPlayer {
         return player.getName();
     }
 
-    public void appendMessage(int id, Component tag, Component sender, Component content) {
+    public void appendMessage(int id, Component tag, Component senderComponent, Component content, Player sender) {
         if (messages.size() >= 100) {
             messages.remove(0);
         }
-        messages.add(new ChatMessage(id, tag, sender, content));
+        messages.add(new ChatMessage(id, tag, senderComponent, content, sender));
 //        messages.forEach(chatMessage -> loggerChatPlayer.log(Level.INFO, chatMessage.id + " (" + messages.size() + "):: " + PlainTextComponentSerializer.plainText().serialize(chatMessage.getContent())));
     }
     public void deleteMessage(int id) {
