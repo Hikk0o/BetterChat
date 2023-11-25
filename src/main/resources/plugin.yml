@@ -2,26 +2,35 @@ name: BetterChat
 version: 1.0
 main: hikko.betterchat.BetterChat
 load: POSTWORLD
-api-version: 1.19
+api-version: 1.20
 prefix: BetterChat
 authors: [ Hikko ]
 depend:
-  - Essentials
-  - AuthMe
+#  - Essentials
+#  - AuthMe
   - ProtocolLib
-  - SuperVanish
+#  - SuperVanish
+
+folia-supported: true
 
 commands:
-  dmsg:
-    description: ""
-  rmsg:
-    description: ""
+#  dmsg:
+#    description: ""
+#  rmsg:
+#    description: ""
+  pm:
+    aliases:
+      - msg
+      - w
+    description: "Personal message"
 
 permissions:
   betterchat:
-    detelemessage:
-      default: op
-      description: Allow delete messages
-    viewmessagereports:
-      default: op
-      description: Allow view reports
+#    detelemessage:
+#      default: op
+#      description: Allow delete messages
+#    viewmessagereports:
+#      default: op
+#      description: Allow view reports
+    pm:
+      default: not op

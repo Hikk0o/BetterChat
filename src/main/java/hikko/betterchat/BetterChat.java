@@ -1,7 +1,6 @@
 package hikko.betterchat;
 
-import hikko.betterchat.commands.DelMessage;
-import hikko.betterchat.commands.ReportMessage;
+import hikko.betterchat.commands.PmMessage;
 import hikko.betterchat.events.ChatEvents;
 import hikko.betterchat.utils.WebhookClient;
 import net.ess3.api.IEssentials;
@@ -27,14 +26,18 @@ public final class BetterChat extends JavaPlugin {
         pluginManager = Bukkit.getPluginManager();
 
         // Utils
-        webhookClient = new WebhookClient();
+//        webhookClient = new WebhookClient();
 
         // Commands
-        new DelMessage();
-        new ReportMessage();
+//        new DelMessage();
+//        new ReportMessage();
+        new PmMessage();
 
         // Events
         pluginManager.registerEvents(new ChatEvents(), this);
+
+        logger.info("Successfully enabled.");
+        logger.info("Author: Hikk0o (https://github.com/Hikk0o)");
 
     }
 

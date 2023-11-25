@@ -5,6 +5,11 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    id("io.papermc.paperweight.userdev") version "1.5.5" // the latest version can be found on the Gradle Plugin Portal
+}
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
 repositories {
@@ -36,45 +41,44 @@ repositories {
     maven {
         url = uri('https://repo.maven.apache.org/maven2/')
     }
+
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:1.19.2-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.20.2-R0.1-SNAPSHOT'
     compileOnly 'net.essentialsx:EssentialsX:2.19.5-SNAPSHOT'
     compileOnly 'fr.xephi:authme:5.6.0-SNAPSHOT'
-    compileOnly 'com.comphenix.protocol:ProtocolLib:5.0.0-SNAPSHOT'
+    compileOnly 'com.comphenix.protocol:ProtocolLib:5.1.0'
     compileOnly 'com.github.LeonMangler:SuperVanish:6.2.6-4'
-    implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.8.2'
+//    implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.8.2'
+    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
 
 }
 
 group = 'Hikko'
 version = '1.0'
 description = 'BetterChat'
-java.sourceCompatibility = JavaVersion.VERSION_17
+//java.sourceCompatibility = JavaVersion.VERSION_17
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from(components.java)
-        }
-    }
+tasks.assemble {
+    dependsOn(reobfJar)
 }
 
-tasks.withType(JavaCompile) {
+//publishing {
+//    publications {
+//        maven(MavenPublication) {
+//            from(components.java)
+//        }
+//    }
+//}
+
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
-
-jar {
-	from {
-		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-	}
-	duplicatesStrategy = DuplicatesStrategy.INCLUDE
-}
-
-task copyJar(type: Copy) {
-    from jar // copies output of file produced from jar task
-    into 'D:\\Desktop\\paper-1_19\\plugins'
-}
-
-build.finalizedBy copyJar
+//
+//jar {
+//	from {
+//		configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+//	}
+//	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+//}

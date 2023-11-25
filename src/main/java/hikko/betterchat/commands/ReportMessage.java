@@ -1,9 +1,9 @@
 package hikko.betterchat.commands;
 
-import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.send.WebhookEmbed;
-import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
-import club.minnced.discord.webhook.send.WebhookMessageBuilder;
+//import club.minnced.discord.webhook.WebhookClient;
+//import club.minnced.discord.webhook.send.WebhookEmbed;
+//import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
+//import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import hikko.betterchat.BetterChat;
 import hikko.betterchat.playerhistory.ChatController;
 import hikko.betterchat.playerhistory.ChatMessage;
@@ -72,21 +72,21 @@ public class ReportMessage extends AbstractCommand {
 //                        BetterChat.logger.info("/dmsg " + id);
 
                         // Start webhook
-                        String descriptionMessage = "Игрок **" + sender.getName() + "** пожаловался на сообщение:" + "\n\n" +
-                                '`' + message.getSender().getName() + ": " + ChatUtils.getStringFromComponent(message.getContent()) + '`';
-                        WebhookEmbed.EmbedFooter embedFooter = new WebhookEmbed.EmbedFooter("Message id: " + id, "");
-                        WebhookEmbed embed = new WebhookEmbedBuilder()
-                                .setColor(0xFF5555)
-                                .setDescription(descriptionMessage)
-                                .setFooter(embedFooter)
-                                .setThumbnailUrl("https://minotar.net/avatar/"+player.getName()+"/300.png")
-                                .build();
-                        WebhookMessageBuilder builder = new WebhookMessageBuilder();
-                        builder.setUsername("Report System");
-                        builder.setAvatarUrl("https://cdn.icon-icons.com/icons2/1378/PNG/512/dialogerror_92823.png");
-                        builder.addEmbeds(embed);
-                        WebhookClient webhookClient = BetterChat.getInstance().getWebhookClient().getWebhookClient();
-                        if (webhookClient != null) webhookClient.send(builder.build());
+//                        String descriptionMessage = "Игрок **" + sender.getName() + "** пожаловался на сообщение:" + "\n\n" +
+//                                '`' + message.getSender().getName() + ": " + ChatUtils.getStringFromComponent(message.getContent()) + '`';
+//                        WebhookEmbed.EmbedFooter embedFooter = new WebhookEmbed.EmbedFooter("Message id: " + id, "");
+//                        WebhookEmbed embed = new WebhookEmbedBuilder()
+//                                .setColor(0xFF5555)
+//                                .setDescription(descriptionMessage)
+//                                .setFooter(embedFooter)
+//                                .setThumbnailUrl("https://minotar.net/avatar/"+player.getName()+"/300.png")
+//                                .build();
+//                        WebhookMessageBuilder builder = new WebhookMessageBuilder();
+//                        builder.setUsername("Report System");
+//                        builder.setAvatarUrl("https://cdn.icon-icons.com/icons2/1378/PNG/512/dialogerror_92823.png");
+//                        builder.addEmbeds(embed);
+//                        WebhookClient webhookClient = BetterChat.getInstance().getWebhookClient().getWebhookClient();
+//                        if (webhookClient != null) webhookClient.send(builder.build());
                         // End webhook
 
                     } else {
